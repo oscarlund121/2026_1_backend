@@ -1,12 +1,18 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect
 import x
 import uuid
 import time
+from flask_session import Session
+
 
 from icecream import ic
 ic.configureOutput(prefix=f'----- | ', includeContext=True)
-
+ 
 app = Flask(__name__)
+ 
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
 
 
 ##############################
@@ -140,3 +146,50 @@ def create_user():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()  
+
+##############################
+@app.get("/login")
+def login():
+    return render_template("page_login.html") 
+
+##############################
+@app.post("/login")
+def user_login():
+    try:
+        # TODO: validate
+        # TODO: Check if email and password exist in the database
+        user = {
+            "name": "Oscar"
+        }
+        session["user"] = user
+        return "You are logged in"
+    except Exception as ex:
+        ic(ex)
+        return str(ex)
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()  
+
+
+##############################
+@app.get("/profile")
+@x.no_cache
+def profile():
+    try: 
+        user = session.get("user", "")
+        if not user: return redirect("/login")
+        ic(user)
+        return render_template("page_profile.html", user=user) 
+    except Exception as ex:
+        ic(ex)
+        return "error"
+
+##############################
+@app.get("/logout")
+def logout():
+    try:
+        session.clear()
+        return redirect("/login")
+    except Exception as ex:
+        ic(ex)
+        return "ups"
